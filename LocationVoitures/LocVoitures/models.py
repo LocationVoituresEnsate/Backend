@@ -1,4 +1,46 @@
 from django.db import models
 from db_connection import db
+from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
 
-voitures_collection=db['Voitures']
+# Si vous avez une collection MongoDB pour les voitures
+voitures_collection = db['Voitures']
+
+  
+
+# Définir un gestionnaire personnalisé
+class UserManager(BaseUserManager):
+    def create_user(self, username, email, password=None, **extra_fields):
+        if not email:
+            raise ValueError('L\'email doit être renseigné.')
+        
+        # Vérifier si l'email existe déjà dans la base de données
+        if self.model.objects.filter(email=email).exists():
+            raise ValueError('Cet email est déjà utilisé.')
+        
+        email = self.normalize_email(email)
+        user = self.model(username=username, email=email, **extra_fields)
+        user.set_password(password)  # Hachage du mot de passe
+        user.save(using=self._db)
+        return user
+
+# Modèle d'utilisateur personnalisé
+class User(AbstractBaseUser):
+    username = models.CharField(max_length=150, unique=True)
+    email = models.EmailField(unique=True)
+    first_name = models.CharField(max_length=30, blank=True)
+    role = models.CharField(max_length=10, choices=[('admin', 'Admin'), ('manager', 'Manager')], default='manager')
+    last_name = models.CharField(max_length=30, blank=True)
+    phone_number = models.CharField(max_length=15, blank=True, null=True)
+    address = models.CharField(max_length=255, blank=True, null=True)
+    date_joined = models.DateTimeField(auto_now_add=True)
+
+    objects = UserManager()
+
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ['username']
+
+    def __str__(self):
+        return self.email
+
+    # Supprimer la méthode save() personnalisée si vous utilisez MongoDB
+    # Cela permet à MongoDB de gérer automatiquement l'attribution de l'ID
