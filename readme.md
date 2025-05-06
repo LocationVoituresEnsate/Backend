@@ -7,3 +7,7 @@ Database setup
 --our unified name is LocationVoitures
 --check that the connection url in 'db_connection.py' is correct from mongodb compass
 -- we should create the database before starting the development
+Running the project:
+-- cd LocationVoitures
+-- python manage.py runserver
+
