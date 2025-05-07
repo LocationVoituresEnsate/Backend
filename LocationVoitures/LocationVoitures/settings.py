@@ -105,7 +105,7 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 AUTHENTICATION_BACKENDS = [
-    'LocVoitures.auth_backends.UsernameAuthBackend',
+    'LocVoitures.auth_backends.EmailAuthBackend',
 ]
 # Internationalization
 # https://docs.djangoproject.com/en/5.1/topics/i18n/

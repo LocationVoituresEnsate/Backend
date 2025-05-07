@@ -131,16 +131,17 @@ def login(request):
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
-            username = data.get('username')
+            email = data.get('email')
             password = data.get('password')
 
-            if not username or not password:
+            if not email or not password:
                 return JsonResponse({
-                    'message': 'Les champs username et password sont obligatoires.',
+                    'message': 'Les champs email et password sont obligatoires.',
                     'error': True
                 }, status=400)
 
-            user = authenticate(username=username, password=password)
+            # Appel à authenticate avec email personnalisé
+            user = authenticate(email=email, password=password)
 
             if user is not None:
                 if user.is_active:
@@ -155,7 +156,7 @@ def login(request):
                     return JsonResponse({'message': 'Compte désactivé.', 'error': True}, status=403)
             else:
                 return JsonResponse({
-                    'message': 'Nom d’utilisateur ou mot de passe incorrect.',
+                    'message': 'Email ou mot de passe incorrect.',
                     'error': True
                 }, status=401)
 
