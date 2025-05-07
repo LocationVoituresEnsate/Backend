@@ -1,6 +1,8 @@
 from django.db import models
 from db_connection import db
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
+from bson import ObjectId  # en haut du fichier
+
 
 # Si vous avez une collection MongoDB pour les voitures
 voitures_collection = db['Voitures']
@@ -25,6 +27,7 @@ class UserManager(BaseUserManager):
 
 # Modèle d'utilisateur personnalisé
 class User(AbstractBaseUser):
+    id = models.CharField(primary_key=True, max_length=24, default=lambda: str(ObjectId()), editable=False)
     username = models.CharField(max_length=150, unique=True)
     email = models.EmailField(unique=True)
     first_name = models.CharField(max_length=30, blank=True)

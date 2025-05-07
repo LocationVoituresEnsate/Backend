@@ -10,8 +10,6 @@ from django.contrib.auth import get_user_model
 from django.contrib import messages
 from django.views.decorators.csrf import csrf_exempt
 
-from django.contrib.auth import authenticate, login
-from django.contrib.auth.forms import AuthenticationForm
 
 from django.contrib.auth import authenticate, login
 
@@ -56,56 +54,58 @@ def get_all_voitures(request):
 
 
 
-@csrf_exempt  # Désactive la protection CSRF pour les tests via API
+@csrf_exempt
 def register(request):
     if request.method == 'POST':
         try:
-            # Utiliser json.loads() pour charger les données JSON depuis request.body
             data = json.loads(request.body)
-            
-            # Extraire les données nécessaires
-            username = data.get("username")
-            password = data.get("password")
-            email = data.get("email")
-            role = data.get("role")  # Rôle de l'utilisateur (admin ou manager)
-            first_name = data.get("first_name")  # Prénom
-            last_name = data.get("last_name")    # Nom
-            phone_number = data.get("phone_number")  # Numéro de téléphone
-            address = data.get("address")  # Adresse
-            
-            # Vérifier que les champs obligatoires sont fournis
-            if not username or not password or not email:
+
+            # Champs requis
+            required_fields = ["username", "password", "email"]
+            missing_fields = [field for field in required_fields if not data.get(field)]
+            if missing_fields:
                 return JsonResponse({
-                    'message': 'Les champs username, password, et email sont obligatoires.',
-                    'error': True
-                }, status=400)
-            
-            # Vérifier si l'email est déjà utilisé
-            if get_user_model().objects.filter(email=email).exists():
-                return JsonResponse({
-                    'message': 'Cet email est déjà utilisé.',
+                    'message': f"Les champs suivants sont obligatoires : {', '.join(missing_fields)}.",
                     'error': True
                 }, status=400)
 
+            username = data["username"]
+            password = data["password"]
+            email = data["email"]
+
+            first_name = data.get("first_name", "")
+            last_name = data.get("last_name", "")
+            phone_number = data.get("phone_number", "")
+            address = data.get("address", "")
+            role = data.get("role", "manager")  # Par défaut, manager
+
+            User = get_user_model()
+
+            # Vérifier unicité de l'email et du username
+            if User.objects.filter(email=email).exists():
+                return JsonResponse({'message': 'Cet email est déjà utilisé.', 'error': True}, status=400)
+            if User.objects.filter(username=username).exists():
+                return JsonResponse({'message': 'Ce nom d’utilisateur est déjà utilisé.', 'error': True}, status=400)
+
             # Créer l'utilisateur
-            user = get_user_model().objects.create_user(
+            user = User.objects.create_user(
                 username=username,
                 email=email,
+                password=password,  # Haché automatiquement
                 first_name=first_name,
                 last_name=last_name,
                 phone_number=phone_number,
                 address=address,
-                password=password,  # Assurez-vous que le mot de passe est haché
-                role=role  # Ajouter le rôle
+                role=role
             )
 
-            # Convertir l'ObjectId en chaîne pour le renvoyer dans la réponse
-            user_id = str(user.id)  # MongoDB retourne un ObjectId, converti en chaîne
+            # S'assurer que le compte est actif
+            user.is_active = True
+            user.save()
 
-            # Retourner une réponse JSON avec les informations de l'utilisateur créé
             return JsonResponse({
                 'message': 'Utilisateur créé avec succès!',
-                'user_id': user_id,  # Utiliser l'ID converti en chaîne
+                'user_id': str(user.id),
                 'username': user.username,
                 'email': user.email,
                 'role': user.role,
@@ -115,16 +115,53 @@ def register(request):
                 'address': user.address,
             }, status=201)
 
+        except json.JSONDecodeError:
+            return JsonResponse({'message': 'Le format JSON est invalide.', 'error': True}, status=400)
+
         except Exception as e:
-            return JsonResponse({
-                'message': f'Erreur lors de la création de l\'utilisateur : {str(e)}',
-                'error': True
-            }, status=500)
+            return JsonResponse({'message': f'Erreur serveur : {str(e)}', 'error': True}, status=500)
 
-    return JsonResponse({
-        'message': 'Méthode non autorisée.',
-        'error': True
-    }, status=405)
-    
+    return JsonResponse({'message': 'Méthode non autorisée.', 'error': True}, status=405)
+  
+  
 
 
+@csrf_exempt
+def login(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            username = data.get('username')
+            password = data.get('password')
+
+            if not username or not password:
+                return JsonResponse({
+                    'message': 'Les champs username et password sont obligatoires.',
+                    'error': True
+                }, status=400)
+
+            user = authenticate(username=username, password=password)
+
+            if user is not None:
+                if user.is_active:
+                    return JsonResponse({
+                        'message': 'Connexion réussie.',
+                        'user_id': str(user.id),
+                        'username': user.username,
+                        'email': user.email,
+                        'role': user.role
+                    }, status=200)
+                else:
+                    return JsonResponse({'message': 'Compte désactivé.', 'error': True}, status=403)
+            else:
+                return JsonResponse({
+                    'message': 'Nom d’utilisateur ou mot de passe incorrect.',
+                    'error': True
+                }, status=401)
+
+        except json.JSONDecodeError:
+            return JsonResponse({'message': 'Le format JSON est invalide.', 'error': True}, status=400)
+        except Exception as e:
+            return JsonResponse({'message': f'Erreur serveur : {str(e)}', 'error': True}, status=500)
+
+    return JsonResponse({'message': 'Méthode non autorisée.', 'error': True}, status=405)

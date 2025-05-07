@@ -5,4 +5,5 @@ urlpatterns=[
    path("add/",views.add_voiture),
    path("get/",views.get_all_voitures),
    path('register/', views.register, name='register'),
+   path('login/', views.login, name='login'),
 ]
