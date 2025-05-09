@@ -37,7 +37,8 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "LocVoitures"
+    "LocVoitures",
+    "Users"
 ]
 
 MIDDLEWARE = [
@@ -105,7 +106,7 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 AUTHENTICATION_BACKENDS = [
-    'LocVoitures.auth_backends.EmailAuthBackend',
+    'Users.auth_backends.EmailAuthBackend',
 ]
 # Internationalization
 # https://docs.djangoproject.com/en/5.1/topics/i18n/
@@ -118,7 +119,7 @@ USE_I18N = True
 
 USE_TZ = True
 
-AUTH_USER_MODEL = 'LocVoitures.User'
+AUTH_USER_MODEL = 'Users.User'
 
 
 
