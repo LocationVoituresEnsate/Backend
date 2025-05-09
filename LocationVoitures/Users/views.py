@@ -222,7 +222,7 @@ def get_manager(request, manager_id):
 #update manager
 @csrf_exempt
 def update_manager(request, manager_id):
-    if request.method == 'PATCH':
+    if request.method == 'PUT':
         try:
             data = json.loads(request.body)
             manager = get_user_model().objects.get(id=manager_id, role='manager')
