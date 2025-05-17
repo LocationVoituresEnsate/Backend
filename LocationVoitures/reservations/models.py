@@ -1,4 +1,5 @@
 from django.db import models
 
 
-voitures_collection = db['Reservations']
+Voiture = db['Voitures']
+Client = db['Clients']
