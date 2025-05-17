@@ -38,8 +38,9 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "LocVoitures",
-    "Users",
-    "customer"
+    "Auth",
+    "customer",
+    "manager",
 ]
 
 MIDDLEWARE = [
@@ -107,7 +108,7 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 AUTHENTICATION_BACKENDS = [
-    'Users.auth_backends.EmailAuthBackend',
+    'Auth.auth_backends.EmailAuthBackend',
 ]
 # Internationalization
 # https://docs.djangoproject.com/en/5.1/topics/i18n/
@@ -120,7 +121,6 @@ USE_I18N = True
 
 USE_TZ = True
 
-AUTH_USER_MODEL = 'Users.User'
 
 
 
