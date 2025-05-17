@@ -1,10 +1,19 @@
 import datetime
 import json
 from django.http import JsonResponse
-from django.shortcuts import render,HttpResponse
+from django.shortcuts import render,HttpResponse, redirect
 from .models import voitures_collection
 from django.views.decorators.csrf import csrf_exempt
 from bson.objectid import ObjectId
+
+
+from django.contrib.auth import get_user_model
+from django.contrib import messages
+from django.views.decorators.csrf import csrf_exempt
+
+
+from django.contrib.auth import authenticate, login
+
 
 # Create your views here.
 def home(request):
@@ -57,7 +66,6 @@ def add_voiture(request):
 def get_all_voitures(request):
     voitures=voitures_collection.find()
     return HttpResponse(voitures)
-
 
 @csrf_exempt
 def update_voiture(request, voiture_id):
@@ -130,4 +138,5 @@ def delete_voiture(request, voiture_id):
             return JsonResponse({"error": str(e)}, status=400)
 
     return JsonResponse({"error": "Méthode non autorisée"}, status=405)
+
 

@@ -37,7 +37,9 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "LocVoitures"
+    "LocVoitures",
+    "Users",
+    "customer"
 ]
 
 MIDDLEWARE = [
@@ -74,12 +76,16 @@ WSGI_APPLICATION = "LocationVoitures.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
-#DATABASES = {
-    #"default": {
-        #"ENGINE": "django.db.backends.sqlite3",
-        #"NAME": BASE_DIR / "db.sqlite3",
-    #}
-#}
+DATABASES = {
+    'default': {
+        'ENGINE': 'djongo',
+        'NAME': 'LocationVoitures',  # Remplace par le nom de ta base de données MongoDB
+        'ENFORCE_SCHEMA': False,
+        'CLIENT': {
+            'host': 'mongodb://localhost:27017',  # Remplace si MongoDB est sur un autre hôte ou port
+        },
+    }
+}
 
 
 # Password validation
@@ -100,7 +106,9 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
+AUTHENTICATION_BACKENDS = [
+    'Users.auth_backends.EmailAuthBackend',
+]
 # Internationalization
 # https://docs.djangoproject.com/en/5.1/topics/i18n/
 
@@ -111,6 +119,10 @@ TIME_ZONE = "UTC"
 USE_I18N = True
 
 USE_TZ = True
+
+AUTH_USER_MODEL = 'Users.User'
+
+
 
 
 # Static files (CSS, JavaScript, Images)
