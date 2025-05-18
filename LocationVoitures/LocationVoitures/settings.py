@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     "Auth",
     "customer",
     "manager",
+    "reservations"
 ]
 
 MIDDLEWARE = [

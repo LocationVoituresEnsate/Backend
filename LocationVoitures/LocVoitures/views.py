@@ -35,23 +35,24 @@ def add_voiture(request):
                 "color": data.get('color', ''),
                 "dailyPrice": float(data.get('dailyPrice', 0)),
                 "mileage": int(data.get('mileage', 0)),
-                "fuelType": data.get('fuelType', ''),              
-                "transmission": data.get('transmission', ''),      
-                "engineSize": float(data.get('engineSize', 0)),    
-                "power": int(data.get('power', 0)),               
+                "fuelType": data.get('fuelType', ''),
+                "transmission": data.get('transmission', ''),
+                "engineSize": float(data.get('engineSize', 0)),
+                "power": int(data.get('power', 0)),
                 "doors": int(data.get('doors', 4)),
                 "seats": int(data.get('seats', 5)),
                 "trunkCapacity": int(data.get('trunkCapacity', 0)),
                 "insuranceNumber": data.get('insuranceNumber', ''),
-                "insuranceExpiry": data.get('insuranceExpiry', ''), 
+                "insuranceExpiry": data.get('insuranceExpiry', ''),
                 "technicalInspectionDate": data.get('technicalInspectionDate', ''),
                 "nextInspectionDue": data.get('nextInspectionDue', ''),
                 "imageUrl": data.get('imageUrl', ''),
                 "condition": data.get('condition', 'Bon'),
                 "comments": data.get('comments', ''),
                 "available": True,
-                "createdAt": datetime.datetime.now(),
-                "updatedAt": datetime.datetime.now()
+                "reservation_periods": [],  # 🔁 Pour gérer les périodes réservées
+                "createdAt": datetime.now(),
+                "updatedAt": datetime.now()
             }
 
             voitures_collection.insert_one(voiture_data)
@@ -61,7 +62,6 @@ def add_voiture(request):
             return JsonResponse({"error": str(e)}, status=400)
 
     return JsonResponse({"error": "Méthode non autorisée"}, status=405)
-
 
 def get_all_voitures(request):
     voitures=voitures_collection.find()

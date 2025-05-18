@@ -1,4 +1,6 @@
 from django.db import models
+from db_connection import db
 
-
-voitures_collection = db['Reservations']
+reservations = db['Reservations']
+clients = db['client']
+voitures = db['Voitures']
