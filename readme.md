@@ -12,23 +12,32 @@ Running the project:
 -- python manage.py runserver
 
 
-**pour  créer an AdminAccount**
+**pour  créer an Account**
 
 --python manage.py shell
 --vous executer ça dans le shell
+from Auth.models import Auth  
 
-from django.contrib.auth import get_user_model
-User = get_user_model()
 
-User.objects.create_superuser(
+admin = Auth(
     username='admin',
-    email='admin@example.com',
-    password='admin',
-    first_name='Super',
-    last_name='User',
+    email='aya@example.com',
+    first_name='aya',
+    last_name='aya',
     phone_number='0987654321',
-    address='Tetouan 93000'
+    address='Tetouan 93000',
+    role='admin', #on peut creer aussi un manager
+    is_staff=True, 
+    is_superuser=True
 )
+
+admin.set_password('aya12345')  
+admin.save() 
+
+**Pour utiliser JWT 
+    -- pip install PyJWT
+
+
 
 
 
