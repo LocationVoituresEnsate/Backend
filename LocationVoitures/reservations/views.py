@@ -62,6 +62,7 @@ def create_reservation(request):
     return JsonResponse({'error': 'Method not allowed'}, status=405)
 
 
+
 def get_reservation(request, reservation_id):
     if request.method == 'GET':
         try:
@@ -136,14 +137,20 @@ def accept_reservation(request, reservation_id):
             start_date = reservation['start_date']
             end_date = reservation['end_date']
 
-            # Vérification chevauchement
-            for period in voiture.get('reservation_periods', []):
-                existing_start = datetime.strptime(period['start'], '%Y-%m-%d')
-                existing_end = datetime.strptime(period['end'], '%Y-%m-%d')
-                if start_date <= existing_end and end_date >= existing_start:
-                    return JsonResponse({'error': 'Voiture déjà réservée dans cette période'}, status=409)
+            # ❌ Vérifier si une autre réservation ACCEPTED existe dans cette période
+            conflict = reservations.find_one({
+                'voiture_id': reservation['voiture_id'],
+                'status': 'accepted',
+                '_id': {'$ne': reservation['_id']},  # exclure la réservation en cours
+                '$or': [
+                    {'start_date': {'$lte': end_date}, 'end_date': {'$gte': start_date}}
+                ]
+            })
 
-            # Mise à jour du statut + ajout de la période dans la voiture
+            if conflict:
+                return JsonResponse({'error': 'Voiture déjà réservée dans cette période'}, status=409)
+
+            # Mise à jour du statut + ajout de la période
             voitures.update_one(
                 {'_id': voiture['_id']},
                 {
@@ -158,7 +165,7 @@ def accept_reservation(request, reservation_id):
             )
 
             reservations.update_one(
-                {'_id': ObjectId(reservation_id)},
+                {'_id': reservation['_id']},
                 {'$set': {'status': 'accepted'}}
             )
 
