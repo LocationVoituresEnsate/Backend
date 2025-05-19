@@ -5,6 +5,9 @@ from django.conf import settings
 from datetime import datetime, timedelta
 import jwt
 from .models import Auth  # ta classe pymongo personnalisée
+from utils.token_blacklist import blacklisted_tokens
+
+# ajoute le token dans blacklisted_tokens dans ta vue logout
 
 
 @csrf_exempt
@@ -79,3 +82,19 @@ def login(request):
 
     print("[DEBUG] Méthode non autorisée")
     return JsonResponse({'message': 'Méthode non autorisée.', 'error': True}, status=405)
+
+
+# Par exemple, stocke les tokens révoqués en mémoire (à remplacer par une vraie base ou cache Redis)
+
+@csrf_exempt
+def logout(request):
+    if request.method == 'POST':
+        auth_header = request.headers.get('Authorization')
+        if auth_header and auth_header.startswith('Bearer '):
+            token = auth_header.split(' ')[1]
+            blacklisted_tokens.add(token)
+            return JsonResponse({'message': 'Déconnexion réussie.'}, status=200)
+        else:
+            return JsonResponse({'message': 'Token manquant.'}, status=400)
+
+    return JsonResponse({'message': 'Méthode non autorisée.'}, status=405)

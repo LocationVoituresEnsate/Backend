@@ -1,6 +1,12 @@
 import jwt
 from django.http import JsonResponse
 from django.conf import settings
+from utils.token_blacklist import blacklisted_tokens
+
+# puis utilise blacklisted_tokens normalement
+
+# ajoute le token dans blacklisted_tokens dans ta vue logout
+
 
 class JWTAuthMiddleware:
     def __init__(self, get_response):
@@ -9,13 +15,15 @@ class JWTAuthMiddleware:
 
     def __call__(self, request):
         auth_header = request.headers.get('Authorization')
-        print("Authorization header:", auth_header)  # debug
-
         if auth_header and auth_header.startswith('Bearer '):
             token = auth_header.split(' ')[1]
+
+            # Vérifie si le token est blacklisté
+            if token in blacklisted_tokens:
+                return JsonResponse({'message': 'Token révoqué, veuillez vous reconnecter.'}, status=401)
+
             try:
                 payload = jwt.decode(token, self.secret_key, algorithms=['HS256'])
-                print("JWT payload:", payload)  # debug
                 request.user_id = payload.get('user_id')
                 request.user_role = payload.get('role', '').lower()
             except jwt.ExpiredSignatureError:
@@ -23,7 +31,6 @@ class JWTAuthMiddleware:
             except jwt.InvalidTokenError:
                 return JsonResponse({'message': 'Token invalide.', 'error': True}, status=401)
         else:
-            print("Pas d'en-tête Authorization valide.")  # debug
             request.user_id = None
             request.user_role = None
 
