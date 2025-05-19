@@ -18,7 +18,6 @@ def create_client(request):
                     'error': True
                 }, status=400)
 
-            # Vérifier unicité email
             if Client.find_by_email(data["email"]):
                 return JsonResponse({
                     'message': "Un client avec cet email existe déjà.",
@@ -59,6 +58,7 @@ def create_client(request):
     return JsonResponse({'message': 'Méthode non autorisée.', 'error': True}, status=405)
 
 
+@csrf_exempt
 def get_client(request, client_id):
     try:
         client = Client.collection().find_one({'_id': ObjectId(client_id)})
@@ -94,7 +94,6 @@ def update_client(request, client_id):
 
             client = Client(**client_data)
 
-            # Mise à jour des champs
             for field in ['first_name', 'last_name', 'email', 'phone_number', 'address', 'license_number', 'license_country', 'rented_vehicles']:
                 if field in data:
                     setattr(client, field, data[field])
@@ -139,6 +138,7 @@ def delete_client(request, client_id):
     return JsonResponse({'message': 'Méthode non autorisée.', 'error': True}, status=405)
 
 
+@csrf_exempt
 def get_all_clients(request):
     try:
         clients_cursor = Client.collection().find()
