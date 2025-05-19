@@ -50,7 +50,9 @@ SECRET_KEY = "ma_clef_secrete_pour_signer_les_tokens"
 
 MIDDLEWARE = [
   "customer.middleware.JWTAuthMiddleware", 
-  "customer.middleware.AdminOnlyMiddleware",
+  "manager.middleware.JWTAuthMiddleware",
+  "manager.middleware.ManagerOnlyMiddleware",
+  "customer.middleware.ManagerOnlyMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",

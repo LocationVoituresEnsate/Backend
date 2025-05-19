@@ -35,17 +35,17 @@ class ManagerOnlyMiddleware:
 
     def __call__(self, request):
         protected_paths = [
-            '/customer/create/',
-            '/customer/update/',
-            '/customer/delete/',
+            '/manager/create/',
+            '/manager/update/',
+            '/manager/delete/',
         ]
 
         print("Request path:", request.path)
         print("User role:", request.user_role)
 
         if any(request.path.startswith(path) for path in protected_paths):
-            allowed_roles ='manager'
+            allowed_roles ='admin'
             if request.user_role not in allowed_roles:
-                return JsonResponse({'message': 'Accès refusé :  managers seulement.', 'error': True}, status=403)
+                return JsonResponse({'message': 'Accès refusé :  admin seulement.', 'error': True}, status=403)
 
         return self.get_response(request)
