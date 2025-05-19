@@ -62,7 +62,7 @@ def create_reservation(request):
     return JsonResponse({'error': 'Method not allowed'}, status=405)
 
 
-
+@csrf_exempt
 def get_reservation(request, reservation_id):
     if request.method == 'GET':
         try:
@@ -98,6 +98,7 @@ def get_reservation(request, reservation_id):
 
     return JsonResponse({'error': 'Method not allowed'}, status=405)
 
+@csrf_exempt
 def get_all_reservations(request):
     if request.method == 'GET':
         try:

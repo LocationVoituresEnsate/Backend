@@ -63,7 +63,7 @@ def add_voiture(request):
 
     return JsonResponse({"error": "Méthode non autorisée"}, status=405)
 
-
+@csrf_exempt
 def get_all_voitures(request):
     voitures=voitures_collection.find()
     return HttpResponse(voitures)

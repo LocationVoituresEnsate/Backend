@@ -44,6 +44,7 @@ def create_manager(request):
     return JsonResponse({'message': 'Méthode non autorisée'}, status=405)
 
 
+@csrf_exempt
 def get_manager(request, user_id):
     try:
         user = User.objects.get(id=user_id)
@@ -109,6 +110,7 @@ def delete_manager(request, user_id):
     return JsonResponse({'message': 'Méthode non autorisée'}, status=405)
 
 
+@csrf_exempt
 def get_all_managers(request):
     try:
         users = User.objects.all()
