@@ -4,6 +4,7 @@ from bson import ObjectId
 from django.utils import timezone
 
 def generate_objectid():
+    # Génère un ObjectId en string 24 caractères hexadécimaux
     return str(ObjectId())
 
 class UserManager(BaseUserManager):
@@ -11,24 +12,24 @@ class UserManager(BaseUserManager):
         if not email:
             raise ValueError('L\'email doit être renseigné.')
         email = self.normalize_email(email)
+        print(f"Normalized email: {email}")
 
         if self.model.objects.filter(email=email).exists():
+            print("Email already exists")  # Debug
             raise ValueError('Cet email est déjà utilisé.')
 
         user = self.model(username=username, email=email, **extra_fields)
+        print(f"User model created: {user}")  # Debug
         user.set_password(password)
+        print("Password set")  # Debug
+
+        # Ici on s'assure que last_login n'est pas None
+        if not user.last_login:
+            user.last_login = timezone.now()
+
         user.save(using=self._db)
+        print("User saved successfully")  # Debug
         return user
-
-    def create_superuser(self, username, email, password=None, **extra_fields):
-        extra_fields.setdefault('role', 'admin')
-        extra_fields.setdefault('is_staff', True)
-        extra_fields.setdefault('is_superuser', True)
-
-        if extra_fields.get('role') != 'admin':
-            raise ValueError('Le superuser doit avoir le rôle admin.')
-
-        return self.create_user(username, email, password, **extra_fields)
 
 class User(AbstractBaseUser, PermissionsMixin):
     id = models.CharField(primary_key=True, max_length=24, default=generate_objectid, editable=False)
@@ -46,14 +47,14 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     groups = models.ManyToManyField(
         Group,
-        related_name='manager_users',  # nom unique pour éviter conflit
+        related_name='manager_users',
         blank=True,
         help_text='Les groupes auxquels cet utilisateur appartient.',
         verbose_name='groupes'
     )
     user_permissions = models.ManyToManyField(
         Permission,
-        related_name='manager_user_permissions',  # nom unique pour éviter conflit
+        related_name='manager_user_permissions',
         blank=True,
         help_text='Permissions spécifiques accordées à cet utilisateur.',
         verbose_name='permissions utilisateur'
@@ -65,17 +66,22 @@ class User(AbstractBaseUser, PermissionsMixin):
     REQUIRED_FIELDS = ['username']
 
     class Meta:
-        db_table = 'Auth'  # correspond à ta collection MongoDB
+        db_table = 'Auth'  # Nom collection MongoDB
 
     def __str__(self):
         return self.email
 
     def save(self, *args, **kwargs):
-        # Synchroniser is_staff et is_superuser avec le rôle admin
-        if self.role == 'admin':
-            self.is_staff = True
-            self.is_superuser = True
-        else:
-            self.is_staff = False
-            self.is_superuser = False
-        super().save(*args, **kwargs)
+      if self.last_login is None:
+          self.last_login = timezone.now()  # ou simplement ne pas l’inclure à l’insert
+
+      # Synchroniser is_staff et is_superuser selon le rôle
+      if self.role == 'admin':
+          self.is_staff = True
+          self.is_superuser = True
+      else:
+          self.is_staff = False
+          self.is_superuser = False
+
+      super().save(*args, **kwargs)
+

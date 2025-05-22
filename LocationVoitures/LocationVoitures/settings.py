@@ -28,6 +28,12 @@ DEBUG = True
 ALLOWED_HOSTS = []
 
 
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ],
+}
+
 # Application definition
 
 INSTALLED_APPS = [
@@ -169,6 +175,16 @@ AUTHENTICATION_BACKENDS = [
 # https://docs.djangoproject.com/en/5.1/topics/i18n/
 
 LANGUAGE_CODE = "en-us"
+
+
+MIGRATION_MODULES = {
+    'manager': None,
+    'auth': None,
+    'contenttypes': None,
+    'sessions': None,
+    'admin': None,
+    # autres apps si besoin
+}
 
 TIME_ZONE = "UTC"
 

@@ -13,49 +13,47 @@ import traceback
 def create_manager(request):
     if request.method == 'POST':
         try:
-            # Décodage des données envoyées
             data = json.loads(request.body.decode('utf-8'))
-            print("Données reçues:", data)  # Debugging
+            print("Données reçues:", data)
 
             required_fields = ['username', 'email', 'password', 'role']
             missing = [f for f in required_fields if not data.get(f)]
             if missing:
                 return JsonResponse(
-                    {'message': f'Champs manquants : {", ".join(missing)}', 'error': True}, 
+                    {'message': f'Champs manquants : {", ".join(missing)}', 'error': True},
                     status=400
                 )
 
-            # Vérification de l'existence de l'email et du nom d'utilisateur
             if User.objects.filter(email=data['email']).exists():
                 return JsonResponse({'message': 'Email déjà utilisé.', 'error': True}, status=400)
             if User.objects.filter(username=data['username']).exists():
                 return JsonResponse({'message': 'Username déjà utilisé.', 'error': True}, status=400)
 
-            # Création du nouvel utilisateur (manager)
-            user = User(
+            user = User.objects.create_user(
                 username=data['username'],
                 email=data['email'],
+                password=data['password'],
                 role=data['role'],
                 first_name=data.get('first_name', ''),
                 last_name=data.get('last_name', ''),
-                phone_number=data.get('phone_number', ''),
-                address=data.get('address', ''),
-                is_staff=(data['role'] == 'admin'),
-                is_superuser=(data['role'] == 'admin'),
+                phone_number=data.get('phone_number', None),
+                address=data.get('address', None)
             )
-            user.password = make_password(data['password'])  # Hachage du mot de passe
-            user.save()
+            
+            print(f"User created with ID: {user.id} (type: {type(user.id)})")
 
             return JsonResponse({'message': 'Manager créé avec succès.', 'user_id': user.id}, status=201)
 
         except json.JSONDecodeError:
             return JsonResponse({'message': 'Format JSON invalide.', 'error': True}, status=400)
         except Exception as e:
-            print(f"Erreur serveur: {e}")  # Afficher l'erreur dans la console
-            traceback.print_exc()  # Afficher la trace d'erreur complète
+            print(f"Erreur serveur: {e}")
+            traceback.print_exc()
             return JsonResponse({'message': f'Erreur serveur: {str(e)}', 'error': True}, status=500)
 
     return JsonResponse({'message': 'Méthode non autorisée'}, status=405)
+  
+  
 
 @csrf_exempt
 def get_manager(request, user_id):
@@ -126,10 +124,10 @@ def delete_manager(request, user_id):
 @csrf_exempt
 def get_all_managers(request):
     try:
-        # On suppose que vous filtrez par rôle 'manager' (vous pouvez ajuster cette partie en fonction de votre logique)
         managers = User.objects.filter(role='manager')
+        count = managers.count()
+        print(f"[DEBUG] Nombre de managers trouvés : {count}")
         
-        # Préparer les données à renvoyer
         data = []
         for manager in managers:
             data.append({
@@ -144,6 +142,9 @@ def get_all_managers(request):
                 'date_joined': manager.date_joined.isoformat(),
             })
         
+        if count == 0:
+            return JsonResponse({'message': 'Manager non trouvé.', 'error': True}, status=404)
+
         return JsonResponse({'managers': data})
 
     except Exception as e:

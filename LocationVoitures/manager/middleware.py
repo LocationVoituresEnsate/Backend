@@ -47,27 +47,28 @@ class ManagerOnlyMiddleware:
             '/manager/create/',
             '/manager/update/',
             '/manager/delete/',
+            '/manager/',
         ]
         
         # Vérification du chemin et du rôle de l'utilisateur
         print("Request path:", request.path)
 
         # On récupère directement le rôle de l'utilisateur connecté
-        user_role = getattr(request.user, 'role', None)
+        user_role = getattr(request, 'user_role', None)
+
 
         print("User role:", user_role)
 
         # Si la requête concerne l'un des chemins protégés, vérifiez le rôle
         if any(request.path.startswith(path) for path in protected_paths):
-            # Définir les rôles autorisés
-            allowed_roles = ['admin']
+          allowed_roles = 'admin'
+          if user_role is None or user_role not in allowed_roles:
+              return JsonResponse(
+                  {'message': 'Accès refusé : admin seulement.', 'error': True}, 
+                  status=403
+              )
 
-            # Vérification si user_role est dans les rôles autorisés
-            if user_role not in allowed_roles:
-                return JsonResponse(
-                    {'message': 'Accès refusé : admin seulement.', 'error': True}, 
-                    status=403
-                )
 
+            
         # Si tout est OK, passez à la vue suivante
         return self.get_response(request)
