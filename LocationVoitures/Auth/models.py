@@ -1,7 +1,8 @@
 from db_connection import db
 from bson import ObjectId
 from datetime import datetime
-from django.contrib.auth.hashers import make_password, check_password
+from django.contrib.auth.hashers import make_password, check_password as django_check_password
+
 
 class Auth:
     def __init__(self, username, email, password=None, first_name='', last_name='',
@@ -31,15 +32,13 @@ class Auth:
 
     @staticmethod
     def find_by_email(email):
-      data = Auth.collection().find_one({'email': email})
-      if data:
-          # Garde seulement les champs acceptés par __init__
-          allowed_keys = {'_id', 'username', 'email', 'password', 'first_name', 'last_name',
-                          'role', 'phone_number', 'address', 'is_staff', 'is_superuser', 'date_joined'}
-          filtered_data = {k: v for k, v in data.items() if k in allowed_keys}
-          return Auth(**filtered_data)
-      return None
-
+        data = Auth.collection().find_one({'email': email})
+        if data:
+            allowed_keys = {'_id', 'username', 'email', 'password', 'first_name', 'last_name',
+                            'role', 'phone_number', 'address', 'is_staff', 'is_superuser', 'date_joined'}
+            filtered_data = {k: v for k, v in data.items() if k in allowed_keys}
+            return Auth(**filtered_data)
+        return None
 
     @staticmethod
     def find_all():
@@ -50,17 +49,18 @@ class Auth:
             for doc in Auth.collection().find()
         ]
 
-
     def set_password(self, raw_password):
         self.password = make_password(raw_password)
 
     def check_password(self, raw_password):
         if not self.password:
             return False
-        return check_password(raw_password, self.password)
+        hashed = str(self.password)  # Assure que c'est une chaîne
+        return django_check_password(raw_password, hashed)
 
     def __str__(self):
         return self.email
-    
+
+
 def generate_objectid():
     return str(ObjectId())

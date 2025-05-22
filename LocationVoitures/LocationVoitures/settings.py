@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "corsheaders",
     "LocVoitures",
     "Auth",
     "customer",
@@ -49,6 +50,7 @@ APPEND_SLASH = False
 SECRET_KEY = "ma_clef_secrete_pour_signer_les_tokens"
 
 MIDDLEWARE = [
+  "corsheaders.middleware.CorsMiddleware",
   "customer.middleware.JWTAuthMiddleware",
   "customer.middleware.ManagerOnlyMiddleware",
   "LocVoitures.middleware.JWTAuthMiddleware",
@@ -82,6 +84,11 @@ TEMPLATES = [
             ],
         },
     },
+]
+
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5174",  # ou l'URL de ton frontend React
 ]
 
 WSGI_APPLICATION = "LocationVoitures.wsgi.application"
