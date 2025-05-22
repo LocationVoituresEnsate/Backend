@@ -21,9 +21,9 @@ from Auth.models import Auth
 
 admin = Auth(
     username='admin',
-    email='aya@example.com',
+    email='aya@gmail.com',
     first_name='aya',
-    last_name='aya',
+    last_name='Touicha',
     phone_number='0987654321',
     address='Tetouan 93000',
     role='admin', #on peut creer aussi un manager
