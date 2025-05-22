@@ -3,6 +3,7 @@ from django.http import JsonResponse
 from django.conf import settings
 from utils.token_blacklist import blacklisted_tokens
 
+
 # puis utilise blacklisted_tokens normalement
 
 class JWTAuthMiddleware:
@@ -33,23 +34,40 @@ class JWTAuthMiddleware:
 
         return self.get_response(request)
 
+
+from django.http import JsonResponse
+
 class ManagerOnlyMiddleware:
     def __init__(self, get_response):
         self.get_response = get_response
 
     def __call__(self, request):
+        # Liste des chemins protégés
         protected_paths = [
             '/manager/create/',
             '/manager/update/',
             '/manager/delete/',
         ]
-
+        
+        # Vérification du chemin et du rôle de l'utilisateur
         print("Request path:", request.path)
-        print("User role:", request.user_role)
 
+        # On récupère directement le rôle de l'utilisateur connecté
+        user_role = getattr(request.user, 'role', None)
+
+        print("User role:", user_role)
+
+        # Si la requête concerne l'un des chemins protégés, vérifiez le rôle
         if any(request.path.startswith(path) for path in protected_paths):
-            allowed_roles ='admin'
-            if request.user_role not in allowed_roles:
-                return JsonResponse({'message': 'Accès refusé :  admin seulement.', 'error': True}, status=403)
+            # Définir les rôles autorisés
+            allowed_roles = ['admin']
 
+            # Vérification si user_role est dans les rôles autorisés
+            if user_role not in allowed_roles:
+                return JsonResponse(
+                    {'message': 'Accès refusé : admin seulement.', 'error': True}, 
+                    status=403
+                )
+
+        # Si tout est OK, passez à la vue suivante
         return self.get_response(request)

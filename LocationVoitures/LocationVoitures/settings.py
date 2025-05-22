@@ -50,25 +50,46 @@ APPEND_SLASH = False
 SECRET_KEY = "ma_clef_secrete_pour_signer_les_tokens"
 
 MIDDLEWARE = [
-  "corsheaders.middleware.CorsMiddleware",
-  "customer.middleware.JWTAuthMiddleware",
-  "customer.middleware.ManagerOnlyMiddleware",
-  "LocVoitures.middleware.JWTAuthMiddleware",
-  "LocVoitures.middleware.ManagerOnlyMiddleware",
-  "manager.middleware.JWTAuthMiddleware",
-  "manager.middleware.ManagerOnlyMiddleware",
-  "reservations.middleware.JWTAuthMiddleware",
-  "reservations.middleware.ManagerOnlyMiddleware",
-    "django.middleware.security.SecurityMiddleware",
-    "django.contrib.sessions.middleware.SessionMiddleware",
-    "django.middleware.common.CommonMiddleware",
-    "django.middleware.csrf.CsrfViewMiddleware",
-    "django.contrib.auth.middleware.AuthenticationMiddleware",
-    "django.contrib.messages.middleware.MessageMiddleware",
-    "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    # Middleware CORS
+    'corsheaders.middleware.CorsMiddleware',  # Pour gérer les requêtes CORS (Cross-Origin Resource Sharing)
+
+    # Middleware de sécurité
+    'django.middleware.security.SecurityMiddleware',  # Pour des fonctionnalités de sécurité (comme la protection contre les attaques XSS, Clickjacking, etc.)
+
+    # Middleware de gestion des sessions (doit venir avant AuthenticationMiddleware)
+    'django.contrib.sessions.middleware.SessionMiddleware',  # Gère les sessions utilisateur
+
+    # Middleware pour le suivi des requêtes et de la réponse
+    'django.middleware.common.CommonMiddleware',  # Pour les fonctions de base comme le redirectionnement d'URL, etc.
+    
+    # Middleware CSRF pour la protection contre les attaques CSRF (Cross-Site Request Forgery)
+    'django.middleware.csrf.CsrfViewMiddleware',  # Vérifie les tokens CSRF pour la sécurité des formulaires
+
+    # Middleware pour gérer l'authentification de l'utilisateur (doit venir après SessionMiddleware)
+    'django.contrib.auth.middleware.AuthenticationMiddleware',  # Ajoute l'utilisateur à chaque requête (request.user)
+    
+    # Middleware pour afficher les messages d'informations (comme les alertes)
+    'django.contrib.messages.middleware.MessageMiddleware',  # Permet l'affichage de messages d'information (flash messages)
+    
+    # Middleware pour la protection contre le clickjacking
+    'django.middleware.clickjacking.XFrameOptionsMiddleware',  # Empêche l'affichage de la page dans un iframe (protection contre le clickjacking)
+
+    # Middleware personnalisé pour gérer l'authentification basée sur un JWT
+    'customer.middleware.JWTAuthMiddleware',  # Middleware personnalisé pour l'authentification via JWT (Customer)
+    'manager.middleware.JWTAuthMiddleware',  # Middleware personnalisé pour l'authentification via JWT (Manager)
+    'LocVoitures.middleware.JWTAuthMiddleware',  # Middleware personnalisé pour l'authentification via JWT (LocVoitures)
+    'reservations.middleware.JWTAuthMiddleware',  # Middleware personnalisé pour l'authentification via JWT (Reservations)
+
+    # Middleware personnalisé pour gérer les accès basés sur les rôles (manager seulement)
+    'customer.middleware.ManagerOnlyMiddleware',  # Vérifie si l'utilisateur est un manager (Customer)
+    'manager.middleware.ManagerOnlyMiddleware',  # Vérifie si l'utilisateur est un manager (Manager)
+    'LocVoitures.middleware.ManagerOnlyMiddleware',  # Vérifie si l'utilisateur est un manager (LocVoitures)
+    'reservations.middleware.ManagerOnlyMiddleware',  # Vérifie si l'utilisateur est un manager (Reservations)
 ]
 
+
 ROOT_URLCONF = "LocationVoitures.urls"
+DEBUG = True
 
 TEMPLATES = [
     {
@@ -88,7 +109,21 @@ TEMPLATES = [
 
 
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5174",  # ou l'URL de ton frontend React
+    "http://localhost:5173",  # ou l'URL de ton frontend React
+]
+
+CORS_ALLOW_METHODS = [
+    'GET',
+    'POST',
+    'PUT',
+    'PATCH',
+    'DELETE',
+    'OPTIONS',
+]
+
+CORS_ALLOW_HEADERS = [
+    'content-type',
+    'Authorization',  # Si tu utilises JWT
 ]
 
 WSGI_APPLICATION = "LocationVoitures.wsgi.application"
