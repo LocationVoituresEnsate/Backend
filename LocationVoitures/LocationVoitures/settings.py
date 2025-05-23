@@ -88,7 +88,7 @@ MIDDLEWARE = [
 
     # Middleware personnalisé pour gérer les accès basés sur les rôles (manager seulement)
     'customer.middleware.ManagerOnlyMiddleware',  # Vérifie si l'utilisateur est un manager (Customer)
-    'manager.middleware.ManagerOnlyMiddleware',  # Vérifie si l'utilisateur est un manager (Manager)
+    'manager.middleware.AdminOnlyMiddleware',  # Vérifie si l'utilisateur est un manager (Manager)
     'LocVoitures.middleware.ManagerOnlyMiddleware',  # Vérifie si l'utilisateur est un manager (LocVoitures)
     'reservations.middleware.ManagerOnlyMiddleware',  # Vérifie si l'utilisateur est un manager (Reservations)
 ]
@@ -115,7 +115,9 @@ TEMPLATES = [
 
 
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",  # ou l'URL de ton frontend React
+    "http://localhost:5173",
+    "http://localhost:5174",
+    # ou l'URL de ton frontend React
 ]
 
 CORS_ALLOW_METHODS = [

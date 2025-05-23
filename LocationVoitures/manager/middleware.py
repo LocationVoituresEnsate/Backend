@@ -37,7 +37,7 @@ class JWTAuthMiddleware:
 
 from django.http import JsonResponse
 
-class ManagerOnlyMiddleware:
+class AdminOnlyMiddleware:
     def __init__(self, get_response):
         self.get_response = get_response
 
