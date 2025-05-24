@@ -3,7 +3,6 @@ from bson import ObjectId
 from datetime import datetime
 from django.contrib.auth.hashers import make_password, check_password as django_check_password
 
-
 class Auth:
     def __init__(self, username, email, password=None, first_name='', last_name='',
                  role='manager', phone_number=None, address=None,
@@ -11,7 +10,7 @@ class Auth:
         self._id = _id or ObjectId()
         self.username = username
         self.email = email
-        self.password = password  # hash stocké ici
+        self.password = password  # hash stocké ici (format Django)
         self.first_name = first_name
         self.last_name = last_name
         self.role = role
@@ -52,15 +51,13 @@ class Auth:
     def set_password(self, raw_password):
         self.password = make_password(raw_password)
 
-    def check_password(self, raw_password):
+    def check_password(self, plain_password):
         if not self.password:
             return False
-        hashed = str(self.password)  # Assure que c'est une chaîne
-        return django_check_password(raw_password, hashed)
+        return django_check_password(plain_password, self.password)
 
     def __str__(self):
         return self.email
-
 
 def generate_objectid():
     return str(ObjectId())
