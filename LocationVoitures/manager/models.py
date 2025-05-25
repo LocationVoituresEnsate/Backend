@@ -95,6 +95,13 @@ class Manager:
             {'$set': update_data}
         )
         return result.modified_count > 0
+    @staticmethod
+    def count_managers(collection_name='Auth'):
+        """
+        Méthode statique pour compter le nombre d'utilisateurs avec le rôle 'manager'
+        dans la collection spécifiée de MongoDB.
+        """
+        return db[collection_name].count_documents({'role': 'manager'})
 
 
 

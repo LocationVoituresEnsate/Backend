@@ -63,8 +63,6 @@ class ManagerOnlyMiddleware:
                   {'message': 'Accès refusé : manager seulement.', 'error': True}, 
                   status=403
               )
-
-
-            
+          
         # Si tout est OK, passez à la vue suivante
         return self.get_response(request)

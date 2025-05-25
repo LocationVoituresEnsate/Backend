@@ -3,11 +3,29 @@ from django.views.decorators.csrf import csrf_exempt
 from .models import Client
 import json
 from bson import ObjectId
+import jwt
+from django.conf import settings
 
 @csrf_exempt
 def create_client(request):
     if request.method == 'POST':
         try:
+            # Vérification du token JWT
+            auth_header = request.headers.get('Authorization')
+            if auth_header and auth_header.startswith('Bearer '):
+                token = auth_header.split(' ')[1]
+                try:
+                    payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
+                    user_role = payload.get('role')  # Récupère le rôle de l'utilisateur du payload du JWT
+                except jwt.ExpiredSignatureError:
+                    return JsonResponse({'message': 'Token expiré.', 'error': True}, status=401)
+                except jwt.InvalidTokenError:
+                    return JsonResponse({'message': 'Token invalide.', 'error': True}, status=401)
+            else:
+                return JsonResponse({'message': 'Token manquant.', 'error': True}, status=401)
+
+
+            # Récupérer les données de la requête
             data = json.loads(request.body)
 
             required_fields = ["first_name", "last_name", "email"]
@@ -18,12 +36,14 @@ def create_client(request):
                     'error': True
                 }, status=400)
 
+            # Vérifie si un client avec cet email existe déjà
             if Client.find_by_email(data["email"]):
                 return JsonResponse({
                     'message': "Un client avec cet email existe déjà.",
                     'error': True
                 }, status=400)
 
+            # Création du client
             client = Client(
                 first_name=data["first_name"],
                 last_name=data["last_name"],
@@ -56,6 +76,7 @@ def create_client(request):
             return JsonResponse({'message': f'Erreur serveur : {str(e)}', 'error': True}, status=500)
 
     return JsonResponse({'message': 'Méthode non autorisée.', 'error': True}, status=405)
+
 
 
 @csrf_exempt

@@ -42,10 +42,10 @@ class AdminOnlyMiddleware:
 
     def __call__(self, request):
         protected_paths = [
-            '/customer/create/',
-            '/customer/update/',
-            '/customer/delete/',
-            '/customer/',
+            '/manager/create/',
+            '/manager/update/',
+            '/manager/delete/',
+            '/manager/',
         ]
 
         print("Request path:", request.path)

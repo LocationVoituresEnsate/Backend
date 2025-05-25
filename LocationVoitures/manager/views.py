@@ -161,3 +161,17 @@ def update_manager(request, manager_id):
     except Exception as e:
         logger.error(f"Erreur serveur: {e}")
         return JsonResponse({'message': f'Erreur serveur : {str(e)}'}, status=500)
+  
+
+@csrf_exempt
+def get_manager_count(request):
+    try:
+        # Appel de la méthode count_managers pour obtenir le nombre de managers
+        manager_count = Manager.count_managers(collection_name='Auth')
+        
+        # Retourner le nombre de managers dans une réponse JSON
+        return JsonResponse({'manager_count': manager_count}, status=200)
+    
+    except Exception as e:
+        # En cas d'erreur, renvoyer une erreur serveur
+        return JsonResponse({'message': f'Erreur serveur : {str(e)}'}, status=500)
