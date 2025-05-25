@@ -5,6 +5,10 @@ import json
 from bson import ObjectId
 import jwt
 from django.conf import settings
+from db_connection import db
+from bson.son import SON
+from datetime import datetime
+
 
 @csrf_exempt
 def create_client(request):
@@ -183,3 +187,51 @@ def get_all_clients(request):
 
     except Exception as e:
         return JsonResponse({'message': f'Erreur serveur : {str(e)}', 'error': True}, status=500)
+
+
+@csrf_exempt
+def total_clients(request):
+    try:
+        total = Client.count_clients()
+        return JsonResponse({'client_count': total})
+    except Exception as e:
+        return JsonResponse({'message': f'Erreur : {str(e)}', 'error': True}, status=500)
+
+
+clients = db['client']  # ou le nom exact de ta collection client
+
+@csrf_exempt
+def clients_per_month(request):
+    try:
+        current_year = datetime.now().year
+        months = list(range(1, 13))
+
+        pipeline = [
+            {
+                '$group': {
+                    '_id': {
+                        'year': { '$year': '$date_joined' },
+                        'month': { '$month': '$date_joined' }
+                    },
+                    'count': { '$sum': 1 }
+                }
+            },
+            { '$sort': SON([('_id.year', 1), ('_id.month', 1)]) }
+        ]
+
+        data = list(clients.aggregate(pipeline))
+
+        grouped = {item['_id']['month']: item['count'] for item in data if item['_id']['year'] == current_year}
+
+        # Assurer qu'on retourne les 12 mois, même si le mois n’existe pas dans les résultats
+        formatted = [
+            {
+                'month': month,
+                'count': grouped.get(month, 0)
+            }
+            for month in months
+        ]
+
+        return JsonResponse({'data': formatted})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)

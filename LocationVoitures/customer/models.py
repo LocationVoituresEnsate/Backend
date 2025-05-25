@@ -40,3 +40,9 @@ class Client:
 
     def __str__(self):
         return f"{self.first_name} {self.last_name}"
+    
+    @staticmethod
+    def count_clients():
+        return Client.collection().count_documents({})
+
+

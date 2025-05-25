@@ -8,5 +8,3 @@ from bson import ObjectId  # en haut du fichier
 voitures_collection = db['Voitures']
 
   
-
-# Définir un gestionnaire personnalisé

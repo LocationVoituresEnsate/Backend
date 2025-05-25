@@ -141,3 +141,10 @@ def delete_voiture(request, voiture_id):
     return JsonResponse({"error": "Méthode non autorisée"}, status=405)
 
 
+@csrf_exempt
+def count_voitures(request):
+    try:
+        total = voitures_collection.count_documents({})
+        return JsonResponse({'count_voitures': total})
+    except Exception as e:
+        return JsonResponse({'message': f'Erreur : {str(e)}', 'error': True}, status=500)

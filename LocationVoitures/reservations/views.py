@@ -5,6 +5,8 @@ from datetime import datetime
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 import json
+from bson.son import SON
+
 
 @csrf_exempt
 def create_reservation(request):
@@ -216,3 +218,59 @@ def decline_reservation(request, reservation_id):
             return JsonResponse({'error': str(e)}, status=400)
 
     return JsonResponse({'error': 'Méthode non autorisée'}, status=405)
+  
+  
+
+
+
+@csrf_exempt
+def reservations_per_month_status(request):
+    try:
+        current_year = datetime.now().year
+        months = list(range(1, 13))
+        statuses = ['pending', 'accepted', 'refused']
+
+        # Pipeline d’agrégation MongoDB
+        pipeline = [
+            {
+                '$group': {
+                    '_id': {
+                        'year': { '$year': '$created_at' },
+                        'month': { '$month': '$created_at' },
+                        'status': '$status'
+                    },
+                    'count': { '$sum': 1 }
+                }
+            },
+            { '$sort': SON([('_id.year', 1), ('_id.month', 1), ('_id.status', 1)]) }
+        ]
+
+        data = list(reservations.aggregate(pipeline))
+
+        # Convertir en dict indexé
+        grouped = {}
+        for item in data:
+            y = item['_id']['year']
+            m = item['_id']['month']
+            s = item['_id']['status']
+            grouped.setdefault((y, m), {'year': y, 'month': m, 'pending': 0, 'accepted': 0, 'refused': 0})
+            grouped[(y, m)][s] = item['count']
+
+        # Ajouter les mois manquants avec 0
+        for month in months:
+            key = (current_year, month)
+            if key not in grouped:
+                grouped[key] = {
+                    'year': current_year,
+                    'month': month,
+                    'pending': 0,
+                    'accepted': 0,
+                    'refused': 0
+                }
+
+        # Trier les résultats par mois
+        result = sorted(grouped.values(), key=lambda x: x['month'])
+
+        return JsonResponse({'data': result})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)

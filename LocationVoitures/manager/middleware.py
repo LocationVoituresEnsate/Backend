@@ -45,7 +45,6 @@ class AdminOnlyMiddleware:
             '/manager/create/',
             '/manager/update/',
             '/manager/delete/',
-            '/manager/',
         ]
 
         print("Request path:", request.path)
