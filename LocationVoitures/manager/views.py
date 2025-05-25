@@ -2,16 +2,16 @@ from django.shortcuts import render
 import json
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-import bcrypt
+from django.contrib.auth.hashers import make_password, check_password as django_check_password
 from .models import Manager  # ta classe Manager
 from bson import ObjectId
 from datetime import datetime
 
 import logging
 
+# Configuration des logs
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)  # Configure le niveau de log ici (DEBUG, INFO, WARNING, etc.)
-
 
 @csrf_exempt
 def create_manager_view(request):
@@ -27,19 +27,18 @@ def create_manager_view(request):
         if missing:
             return JsonResponse({'message': f'Champs manquants : {", ".join(missing)}'}, status=400)
 
-        # Vérifie si email existe déjà dans la collection 'Auth'
+        # Vérifie si l'email existe déjà dans la collection 'Auth'
         if Manager.find_by_email(data['email'], collection_name='Auth'):
             return JsonResponse({'message': 'Email déjà utilisé.'}, status=400)
 
-        # Hash du mot de passe
-        hashed = bcrypt.hashpw(data['password'].encode('utf-8'), bcrypt.gensalt())
-        hashed_str = hashed.decode('utf-8')
+        # Hachage du mot de passe avec Django's PBKDF2
+        hashed_str = make_password(data['password'])  # Utilisation de Django's make_password
 
         # Crée le manager
         manager = Manager(
             username=data['username'],
             email=data['email'],
-            password=hashed_str,
+            password=hashed_str,  # Mot de passe haché
             first_name=data['first_name'],
             last_name=data['last_name'],
             phone_number=data.get('phone_number'),
@@ -123,9 +122,6 @@ def delete_manager(request, manager_id):
 
 @csrf_exempt
 def update_manager(request, manager_id):
-    import logging
-    logger = logging.getLogger(__name__)
-
     if request.method != 'PUT':
         return JsonResponse({'message': 'Méthode non autorisée'}, status=405)
 
@@ -142,14 +138,16 @@ def update_manager(request, manager_id):
                 return JsonResponse({'message': 'Email déjà utilisé par un autre manager.'}, status=400)
 
         if 'password' in data and data['password']:
-            import bcrypt
+            # Hachage du mot de passe avec Django's PBKDF2 (via make_password)
             logger.info(f"Changement de mot de passe demandé pour le manager {manager_id}")
-            hashed = bcrypt.hashpw(data['password'].encode('utf-8'), bcrypt.gensalt())
-            data['password'] = hashed.decode('utf-8')
+            hashed_password = make_password(data['password'])
+            data['password'] = hashed_password
             logger.info(f"Mot de passe hashé avec succès pour le manager {manager_id}")
         else:
+            # Si aucun mot de passe n'est fourni, le champ 'password' est supprimé
             data.pop('password', None)
 
+        # Met à jour les données du manager
         success = Manager.update_manager(manager_id, data, collection_name='Auth')
         if not success:
             return JsonResponse({'message': 'Manager non trouvé ou rien à mettre à jour.'}, status=404)
