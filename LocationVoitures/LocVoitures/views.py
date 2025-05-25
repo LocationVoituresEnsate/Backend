@@ -25,39 +25,73 @@ def index(request):
 def add_voiture(request):
     if request.method == 'POST':
         try:
-            data = json.loads(request.body)
+            # Récupérer les champs simples depuis request.POST
+            brand = request.POST.get('brand', '')
+            model = request.POST.get('model', '')
+            year = int(request.POST.get('year', 0))
+            registrationNumber = request.POST.get('registrationNumber', '')
+            color = request.POST.get('color', '')
+            dailyPrice = float(request.POST.get('dailyPrice', 0))
+            mileage = int(request.POST.get('mileage', 0))
+            fuelType = request.POST.get('fuelType', '')
+            transmission = request.POST.get('transmission', '')
+            engineSize = float(request.POST.get('engineSize', 0))
+            power = int(request.POST.get('power', 0))
+            doors = int(request.POST.get('doors', 4))
+            seats = int(request.POST.get('seats', 5))
+            trunkCapacity = int(request.POST.get('trunkCapacity', 0))
+            insuranceNumber = request.POST.get('insuranceNumber', '')
+            insuranceExpiry = request.POST.get('insuranceExpiry', '')
+            technicalInspectionDate = request.POST.get('technicalInspectionDate', '')
+            nextInspectionDue = request.POST.get('nextInspectionDue', '')
+            condition = request.POST.get('condition', 'Bon')
+            comments = request.POST.get('comments', '')
+            # Pour imageUrl, si tu reçois une URL ou un fichier, adapte en fonction
+            # Ici, on va gérer les fichiers via request.FILES
+
+            # Récupérer la liste des fichiers photos (si envoyés)
+            photos = request.FILES.getlist('photos')  # nom du champ 'photos' dans ton FormData frontend
+
+            # TODO: Traitement des photos (enregistrement, génération d'URL, etc.)
+            # Par exemple, enregistrer sur disque ou cloud et récupérer les URLs pour stocker dans la base
+
+            # Exemple simplifié (tu dois adapter selon ta gestion des fichiers)
+            imageUrl = ''
+            if photos:
+                # Juste récupérer le nom du premier fichier (exemple)
+                imageUrl = photos[0].name  
 
             voiture_data = {
-                "brand": data.get('brand', ''),
-                "model": data.get('model', ''),
-                "year": int(data.get('year', 0)),
-                "registrationNumber": data.get('registrationNumber', ''),
-                "color": data.get('color', ''),
-                "dailyPrice": float(data.get('dailyPrice', 0)),
-                "mileage": int(data.get('mileage', 0)),
-                "fuelType": data.get('fuelType', ''),              
-                "transmission": data.get('transmission', ''),      
-                "engineSize": float(data.get('engineSize', 0)),    
-                "power": int(data.get('power', 0)),               
-                "doors": int(data.get('doors', 4)),
-                "seats": int(data.get('seats', 5)),
-                "trunkCapacity": int(data.get('trunkCapacity', 0)),
-                "insuranceNumber": data.get('insuranceNumber', ''),
-                "insuranceExpiry": data.get('insuranceExpiry', ''), 
-                "technicalInspectionDate": data.get('technicalInspectionDate', ''),
-                "nextInspectionDue": data.get('nextInspectionDue', ''),
-                "imageUrl": data.get('imageUrl', ''),
-                "condition": data.get('condition', 'Bon'),
-                "comments": data.get('comments', ''),
+                "brand": brand,
+                "model": model,
+                "year": year,
+                "registrationNumber": registrationNumber,
+                "color": color,
+                "dailyPrice": dailyPrice,
+                "mileage": mileage,
+                "fuelType": fuelType,
+                "transmission": transmission,
+                "engineSize": engineSize,
+                "power": power,
+                "doors": doors,
+                "seats": seats,
+                "trunkCapacity": trunkCapacity,
+                "insuranceNumber": insuranceNumber,
+                "insuranceExpiry": insuranceExpiry,
+                "technicalInspectionDate": technicalInspectionDate,
+                "nextInspectionDue": nextInspectionDue,
+                "imageUrl": imageUrl,
+                "condition": condition,
+                "comments": comments,
                 "available": True,
-                "reservation_periods": [],  # Champ utilisé pour bloquer les périodes réservées
+                "reservation_periods": [],
                 "createdAt": datetime.now(),
                 "updatedAt": datetime.now()
             }
 
             voitures_collection.insert_one(voiture_data)
+
             return JsonResponse({"message": "Voiture ajoutée avec succès"}, status=200)
-        
         except Exception as e:
             return JsonResponse({"error": str(e)}, status=400)
 
