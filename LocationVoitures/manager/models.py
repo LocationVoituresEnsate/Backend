@@ -1,87 +1,100 @@
-from django.db import models
-from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin, Group, Permission
+from db_connection import db
 from bson import ObjectId
-from django.utils import timezone
+from datetime import datetime
 
-def generate_objectid():
-    # Génère un ObjectId en string 24 caractères hexadécimaux
-    return str(ObjectId())
 
-class UserManager(BaseUserManager):
-    def create_user(self, username, email, password=None, **extra_fields):
-        if not email:
-            raise ValueError('L\'email doit être renseigné.')
-        email = self.normalize_email(email)
-        print(f"Normalized email: {email}")
+class Manager:
+    def __init__(self, username, email, password, first_name, last_name,
+                 phone_number=None, address=None, role='manager',
+                 date_joined=None, _id=None, **kwargs):
+        self._id = _id or ObjectId()
+        self.username = username
+        self.email = email
+        self.password = password
+        self.first_name = first_name
+        self.last_name = last_name
+        self.phone_number = phone_number
+        self.address = address
+        self.role = role
+        self.date_joined = date_joined or datetime.utcnow()
+        # Ignorer les autres champs inconnus passés dans kwargs (ex: last_login)
 
-        if self.model.objects.filter(email=email).exists():
-            print("Email already exists")  # Debug
-            raise ValueError('Cet email est déjà utilisé.')
+    @staticmethod
+    def collection(collection_name='Auth'):
+        return db[collection_name]
 
-        user = self.model(username=username, email=email, **extra_fields)
-        print(f"User model created: {user}")  # Debug
-        user.set_password(password)
-        print("Password set")  # Debug
+    def save(self, collection_name='Auth'):
+        data = self.__dict__.copy()
+        data['_id'] = self._id
+        Manager.collection(collection_name).replace_one({'_id': self._id}, data, upsert=True)
 
-        # Ici on s'assure que last_login n'est pas None
-        if not user.last_login:
-            user.last_login = timezone.now()
+    @staticmethod
+    def find_by_email(email, collection_name='Auth'):
+        data = Manager.collection(collection_name).find_one({'email': email})
+        if data:
+            return Manager(**data)
+        return None
 
-        user.save(using=self._db)
-        print("User saved successfully")  # Debug
-        return user
-
-class User(AbstractBaseUser, PermissionsMixin):
-    id = models.CharField(primary_key=True, max_length=24, default=generate_objectid, editable=False)
-    username = models.CharField(max_length=150, unique=True)
-    email = models.EmailField(unique=True)
-    first_name = models.CharField(max_length=30, blank=True)
-    last_name = models.CharField(max_length=30, blank=True)
-    role = models.CharField(max_length=10, choices=[('admin', 'Admin'), ('manager', 'Manager')], default='manager')
-    phone_number = models.CharField(max_length=15, blank=True, null=True)
-    address = models.CharField(max_length=255, blank=True, null=True)
-    is_staff = models.BooleanField(default=False)
-    last_login = models.DateTimeField(null=True, blank=True)
-    is_superuser = models.BooleanField(default=False)
-    date_joined = models.DateTimeField(default=timezone.now)
-
-    groups = models.ManyToManyField(
-        Group,
-        related_name='manager_users',
-        blank=True,
-        help_text='Les groupes auxquels cet utilisateur appartient.',
-        verbose_name='groupes'
-    )
-    user_permissions = models.ManyToManyField(
-        Permission,
-        related_name='manager_user_permissions',
-        blank=True,
-        help_text='Permissions spécifiques accordées à cet utilisateur.',
-        verbose_name='permissions utilisateur'
-    )
-
-    objects = UserManager()
-
-    USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['username']
-
-    class Meta:
-        db_table = 'Auth'  # Nom collection MongoDB
+    @staticmethod
+    def find_all(collection_name='Auth'):
+        return [Manager(**doc) for doc in Manager.collection(collection_name).find()]
 
     def __str__(self):
-        return self.email
+        return f"{self.first_name} {self.last_name} ({self.username})"
+    
+    @staticmethod
+    def update_manager(manager_id, update_data, collection_name='Auth'):
+      """
+      Met à jour un manager identifié par manager_id avec les champs dans update_data.
+      Retourne True si modification, False sinon.
+      """
+      from bson import ObjectId
 
-    def save(self, *args, **kwargs):
-      if self.last_login is None:
-          self.last_login = timezone.now()  # ou simplement ne pas l’inclure à l’insert
+      try:
+          obj_id = ObjectId(manager_id)
+      except Exception:
+          raise ValueError("ID invalide")
 
-      # Synchroniser is_staff et is_superuser selon le rôle
-      if self.role == 'admin':
-          self.is_staff = True
-          self.is_superuser = True
-      else:
-          self.is_staff = False
-          self.is_superuser = False
+      if '_id' in update_data:
+          update_data.pop('_id')
 
-      super().save(*args, **kwargs)
+      result = Manager.collection(collection_name).update_one(
+          {'_id': obj_id},
+          {'$set': update_data}
+      )
+      return result.modified_count > 0
+    
+    @staticmethod
+    def find_by_email_exclude_id(email, exclude_id=None, collection_name='Auth'):
+        query = {'email': email}
+        if exclude_id:
+            try:
+                oid = ObjectId(exclude_id)
+                query['_id'] = {'$ne': oid}
+            except Exception:
+                pass  # ignore si id invalide
+        data = Manager.collection(collection_name).find_one(query)
+        if data:
+            return Manager(**data)
+        return None
+    
+    @staticmethod
+    def update_manager(manager_id, update_data, collection_name='Auth'):
+        from bson import ObjectId
+
+        try:
+            obj_id = ObjectId(manager_id)
+        except Exception:
+            raise ValueError("ID invalide")
+
+        # Debug print pour voir update_data
+        print(f"Update manager {manager_id} avec données: {update_data}")
+
+        result = Manager.collection(collection_name).update_one(
+            {'_id': obj_id},
+            {'$set': update_data}
+        )
+        return result.modified_count > 0
+
+
 

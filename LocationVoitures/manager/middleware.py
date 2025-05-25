@@ -3,8 +3,10 @@ from django.http import JsonResponse
 from django.conf import settings
 from utils.token_blacklist import blacklisted_tokens
 
-
 # puis utilise blacklisted_tokens normalement
+
+# ajoute le token dans blacklisted_tokens dans ta vue logout
+
 
 class JWTAuthMiddleware:
     def __init__(self, get_response):
@@ -34,23 +36,18 @@ class JWTAuthMiddleware:
 
         return self.get_response(request)
 
-
-from django.http import JsonResponse
-
 class AdminOnlyMiddleware:
     def __init__(self, get_response):
         self.get_response = get_response
 
     def __call__(self, request):
-        # Liste des chemins protégés
         protected_paths = [
-            '/manager/create/',
-            '/manager/update/',
-            '/manager/delete/',
-            '/manager/',
+            '/customer/create/',
+            '/customer/update/',
+            '/customer/delete/',
+            '/customer/',
         ]
-        
-        # Vérification du chemin et du rôle de l'utilisateur
+
         print("Request path:", request.path)
 
         # On récupère directement le rôle de l'utilisateur connecté

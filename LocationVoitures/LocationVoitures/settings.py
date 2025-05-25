@@ -94,6 +94,9 @@ MIDDLEWARE = [
 ]
 
 
+# AUTH_USER_MODEL = 'manager.User' 
+
+
 ROOT_URLCONF = "LocationVoitures.urls"
 DEBUG = True
 
