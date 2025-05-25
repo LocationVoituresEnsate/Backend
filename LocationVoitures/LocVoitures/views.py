@@ -21,11 +21,14 @@ def home(request):
 def index(request):
     return HttpResponse("app is running ...")
 
+from django.core.files.storage import default_storage
+from django.core.files.base import ContentFile
+
 @csrf_exempt
 def add_voiture(request):
     if request.method == 'POST':
         try:
-            # Récupérer les champs simples depuis request.POST
+            # Récupération des champs simples (comme tu as déjà fait)
             brand = request.POST.get('brand', '')
             model = request.POST.get('model', '')
             year = int(request.POST.get('year', 0))
@@ -46,20 +49,17 @@ def add_voiture(request):
             nextInspectionDue = request.POST.get('nextInspectionDue', '')
             condition = request.POST.get('condition', 'Bon')
             comments = request.POST.get('comments', '')
-            # Pour imageUrl, si tu reçois une URL ou un fichier, adapte en fonction
-            # Ici, on va gérer les fichiers via request.FILES
 
-            # Récupérer la liste des fichiers photos (si envoyés)
-            photos = request.FILES.getlist('photos')  # nom du champ 'photos' dans ton FormData frontend
-
-            # TODO: Traitement des photos (enregistrement, génération d'URL, etc.)
-            # Par exemple, enregistrer sur disque ou cloud et récupérer les URLs pour stocker dans la base
-
-            # Exemple simplifié (tu dois adapter selon ta gestion des fichiers)
+            photos = request.FILES.getlist('photos')  # Liste des fichiers envoyés
             imageUrl = ''
+
             if photos:
-                # Juste récupérer le nom du premier fichier (exemple)
-                imageUrl = photos[0].name  
+                # Enregistre la première photo dans MEDIA_ROOT / images/
+                photo = photos[0]
+                path = default_storage.save(f'images/{photo.name}', ContentFile(photo.read()))
+
+                # Génère l’URL complète accessible publiquement
+                imageUrl = request.build_absolute_uri(f'/media/{path}')
 
             voiture_data = {
                 "brand": brand,
@@ -92,16 +92,27 @@ def add_voiture(request):
             voitures_collection.insert_one(voiture_data)
 
             return JsonResponse({"message": "Voiture ajoutée avec succès"}, status=200)
+
         except Exception as e:
             return JsonResponse({"error": str(e)}, status=400)
 
     return JsonResponse({"error": "Méthode non autorisée"}, status=405)
 
+
+def serialize_voiture(voiture):
+    # Convertit un document MongoDB en dict JSON-serializable
+    d = dict(voiture)
+    d['_id'] = str(d['_id'])
+    for field in ['createdAt', 'updatedAt']:
+        if field in d and isinstance(d[field], datetime):
+            d[field] = d[field].isoformat()
+    return d
+
 @csrf_exempt
 def get_all_voitures(request):
-    voitures=voitures_collection.find()
-    return HttpResponse(voitures)
-
+    voitures_cursor = voitures_collection.find()
+    voitures_list = [serialize_voiture(v) for v in voitures_cursor]
+    return JsonResponse(voitures_list, safe=False)  # safe=False permet d'envoyer une liste JSON
 @csrf_exempt
 def update_voiture(request, voiture_id):
     if request.method == 'PUT':
