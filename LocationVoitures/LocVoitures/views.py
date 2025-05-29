@@ -142,7 +142,7 @@ def update_voiture(request, voiture_id):
                 "condition": data.get('condition'),
                 "comments": data.get('comments'),
                 "available": data.get('available'),
-                "updatedAt": datetime.datetime.now()
+                "updatedAt": datetime.now()
             }
 
             # Supprimer les clés avec des valeurs None pour éviter de les écraser
