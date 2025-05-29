@@ -329,3 +329,13 @@ def total_revenu(request):
 
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
+@csrf_exempt
+@require_GET
+def count_pending_reservations(request):
+    try:
+        # On compte toutes les réservations avec le status 'pending'
+        pending_count = reservations.count_documents({'status': 'pending'})
+
+        return JsonResponse({'pending_reservations_count': pending_count})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
