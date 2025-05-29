@@ -404,16 +404,23 @@ def top_reserved_vehicles(request):
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
 
+from django.http import JsonResponse
+from .models import reservations, clients, voitures
+from bson import ObjectId
+from datetime import datetime
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_GET
+import json
+
 @csrf_exempt
 @require_GET
 def recent_reservations(request):
     try:
         # Fetch last 5 reservations, sorted by _id (latest first)
         recent_reservations = list(reservations.find().sort('_id', -1).limit(5))
-
         results = []
         for res in recent_reservations:
-            # Convert IDs to ObjectId if they are strings
+            # Convert IDs if they are strings
             client_id = ObjectId(res['client_id']) if isinstance(res['client_id'], str) else res['client_id']
             voiture_id = ObjectId(res['voiture_id']) if isinstance(res['voiture_id'], str) else res['voiture_id']
 
@@ -421,25 +428,139 @@ def recent_reservations(request):
             client = clients.find_one({'_id': client_id})
             voiture = voitures.find_one({'_id': voiture_id})
 
-            # Format dates
-            start_date = res['start_date'].strftime('%d/%m/%Y') if isinstance(res['start_date'], datetime) else res['start_date']
-            end_date = res['end_date'].strftime('%d/%m/%Y') if isinstance(res['end_date'], datetime) else res['end_date']
+            # Make sure dates are parsed as datetime objects
+            start_date = res.get('start_date')
+            end_date = res.get('end_date')
 
-            # Total price calculation
-            days = (res['end_date'] - res['start_date']).days + 1
-            total_price = res['daily_price'] * days
+            # Format dates
+            formatted_start_date = start_date.strftime('%d/%m/%Y') if isinstance(start_date, datetime) else start_date
+            formatted_end_date = end_date.strftime('%d/%m/%Y') if isinstance(end_date, datetime) else end_date
+
+            # Calculate total price safely
+            if isinstance(start_date, datetime) and isinstance(end_date, datetime):
+                days = (end_date - start_date).days + 1  # Include both start and end date
+            else:
+                days = 0
+
+            daily_price = res.get('daily_price', 0)
+            total_price = round(daily_price * days, 2)
 
             results.append({
                 'id': str(res['_id']),
                 'client_name': f"{client.get('first_name', '')} {client.get('last_name', '')}" if client else "Inconnu",
                 'car_name': f"{voiture.get('brand', '')} {voiture.get('model', '')}" if voiture else "Inconnue",
-                'start_date': start_date,
-                'end_date': end_date,
+                'start_date': formatted_start_date,
+                'end_date': formatted_end_date,
                 'total_price': total_price,
                 'status': res.get('status', 'inconnu')
             })
 
         return JsonResponse({'recent_reservations': results}, safe=False)
+
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+      
+@csrf_exempt
+@require_GET
+def revenu_mensuel(request):
+    try:
+        current_year = datetime.now().year
+
+        pipeline = [
+            {
+                # Filtrer sur l'année en cours ET sur les réservations ACCEPTÉES
+                '$match': {
+                    '$expr': {
+                        '$and': [
+                            {'$eq': [{'$year': '$start_date'}, current_year]},
+                            {'$eq': ['$status', 'accepted']}
+                        ]
+                    }
+                }
+            },
+            {
+                # Grouper par mois de la date de début
+                '$group': {
+                    '_id': { 'month': { '$month': '$start_date' } },
+                    'monthly_revenue': { '$sum': '$total_price' }
+                }
+            },
+            {
+                # Trier par mois croissant
+                '$sort': SON([('_id.month', 1)])
+            }
+        ]
+
+        data = list(reservations.aggregate(pipeline))
+
+        # Créer une liste pour tous les mois avec 0 par défaut
+        revenue_per_month = {m: 0 for m in range(1, 13)}
+
+        # Remplir avec les données récupérées
+        for item in data:
+            month = item['_id']['month']
+            revenue_per_month[month] = item['monthly_revenue']
+
+        # Préparer la réponse sous forme de liste ordonnée par mois
+        result = [{'month': month, 'revenue': revenue_per_month[month]} for month in range(1, 13)]
+
+        return JsonResponse({'revenu_mensuel': result})
+
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+      
+      
+@csrf_exempt
+@require_GET
+def reservations_count_per_day(request):
+    try:
+        current_year = datetime.now().year
+
+        pipeline = [
+            {
+                # Filtrer uniquement les réservations de l'année en cours (optionnel, à adapter)
+                '$match': {
+                    '$expr': {
+                        '$eq': [{'$year': '$start_date'}, current_year]
+                    }
+                }
+            },
+            {
+                # Grouper par année, mois, jour pour avoir une date unique par jour
+                '$group': {
+                    '_id': {
+                        'year': { '$year': '$start_date' },
+                        'month': { '$month': '$start_date' },
+                        'day': { '$dayOfMonth': '$start_date' }
+                    },
+                    'count': { '$sum': 1 }
+                }
+            },
+            {
+                # Trier par date croissante
+                '$sort': SON([
+                    ('_id.year', 1),
+                    ('_id.month', 1),
+                    ('_id.day', 1)
+                ])
+            }
+        ]
+
+        data = list(reservations.aggregate(pipeline))
+
+        # Formatage de la réponse pour avoir une date lisible et le nombre
+        results = []
+        for item in data:
+            y = item['_id']['year']
+            m = item['_id']['month']
+            d = item['_id']['day']
+            date_str = f"{y:04d}-{m:02d}-{d:02d}"
+            results.append({
+                'date': date_str,
+                'count': item['count']
+            })
+
+        return JsonResponse({'reservations_per_day': results})
 
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)

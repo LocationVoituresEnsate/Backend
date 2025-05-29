@@ -1,6 +1,6 @@
 from django.urls import path
 from . import views
-from .views import total_revenu
+from .views import total_revenu,reservations_count_per_day
 
 
 urlpatterns = [
@@ -8,6 +8,8 @@ urlpatterns = [
     path('add/', views.create_reservation, name='create-reservation'),
     path('statistics/', views.reservations_per_month_status, name='reservations_stats'),
     path('revenu-par-annee/', total_revenu, name='revenu_par_annee'),
+    path('revenu_mensuel/', views.revenu_mensuel, name='revenu_mensuel'),
+    path('count-per-day/', reservations_count_per_day, name='reservations_count_per_day'),
     path('get/<str:reservation_id>/', views.get_reservation, name='get-reservation'),
     path('get/', views.get_all_reservations, name='get-all-reservations'),
     path('accept_reservation/<str:reservation_id>', views.accept_reservation),
