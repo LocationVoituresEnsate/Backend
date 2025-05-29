@@ -171,7 +171,7 @@ def get_all_clients(request):
         for doc in clients_cursor:
             c = Client(**doc)
             clients_data.append({
-                'client_id': str(c._id),
+                'client_id': str(c._id), 
                 'first_name': c.first_name,
                 'last_name': c.last_name,
                 'email': c.email,

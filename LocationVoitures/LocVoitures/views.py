@@ -112,7 +112,8 @@ def serialize_voiture(voiture):
 def get_all_voitures(request):
     voitures_cursor = voitures_collection.find()
     voitures_list = [serialize_voiture(v) for v in voitures_cursor]
-    return JsonResponse(voitures_list, safe=False)  # safe=False permet d'envoyer une liste JSON
+    return JsonResponse(voitures_list, safe=False)  
+
 @csrf_exempt
 def update_voiture(request, voiture_id):
     if request.method == 'PUT':
