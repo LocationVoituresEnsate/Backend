@@ -443,3 +443,108 @@ def recent_reservations(request):
 
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
+      
+@csrf_exempt
+@require_GET
+def revenu_mensuel(request):
+    try:
+        current_year = datetime.now().year
+
+        pipeline = [
+            {
+                # Filtrer sur l'année en cours ET sur les réservations ACCEPTÉES
+                '$match': {
+                    '$expr': {
+                        '$and': [
+                            {'$eq': [{'$year': '$start_date'}, current_year]},
+                            {'$eq': ['$status', 'accepted']}
+                        ]
+                    }
+                }
+            },
+            {
+                # Grouper par mois de la date de début
+                '$group': {
+                    '_id': { 'month': { '$month': '$start_date' } },
+                    'monthly_revenue': { '$sum': '$total_price' }
+                }
+            },
+            {
+                # Trier par mois croissant
+                '$sort': SON([('_id.month', 1)])
+            }
+        ]
+
+        data = list(reservations.aggregate(pipeline))
+
+        # Créer une liste pour tous les mois avec 0 par défaut
+        revenue_per_month = {m: 0 for m in range(1, 13)}
+
+        # Remplir avec les données récupérées
+        for item in data:
+            month = item['_id']['month']
+            revenue_per_month[month] = item['monthly_revenue']
+
+        # Préparer la réponse sous forme de liste ordonnée par mois
+        result = [{'month': month, 'revenue': revenue_per_month[month]} for month in range(1, 13)]
+
+        return JsonResponse({'revenu_mensuel': result})
+
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+      
+      
+@csrf_exempt
+@require_GET
+def reservations_count_per_day(request):
+    try:
+        current_year = datetime.now().year
+
+        pipeline = [
+            {
+                # Filtrer uniquement les réservations de l'année en cours (optionnel, à adapter)
+                '$match': {
+                    '$expr': {
+                        '$eq': [{'$year': '$start_date'}, current_year]
+                    }
+                }
+            },
+            {
+                # Grouper par année, mois, jour pour avoir une date unique par jour
+                '$group': {
+                    '_id': {
+                        'year': { '$year': '$start_date' },
+                        'month': { '$month': '$start_date' },
+                        'day': { '$dayOfMonth': '$start_date' }
+                    },
+                    'count': { '$sum': 1 }
+                }
+            },
+            {
+                # Trier par date croissante
+                '$sort': SON([
+                    ('_id.year', 1),
+                    ('_id.month', 1),
+                    ('_id.day', 1)
+                ])
+            }
+        ]
+
+        data = list(reservations.aggregate(pipeline))
+
+        # Formatage de la réponse pour avoir une date lisible et le nombre
+        results = []
+        for item in data:
+            y = item['_id']['year']
+            m = item['_id']['month']
+            d = item['_id']['day']
+            date_str = f"{y:04d}-{m:02d}-{d:02d}"
+            results.append({
+                'date': date_str,
+                'count': item['count']
+            })
+
+        return JsonResponse({'reservations_per_day': results})
+
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
