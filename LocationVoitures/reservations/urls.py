@@ -13,4 +13,7 @@ urlpatterns = [
     path('accept_reservation/<str:reservation_id>', views.accept_reservation),
     path('decline_reservation/<str:reservation_id>', views.decline_reservation),
      path('pending-count/', views.count_pending_reservations, name='count_pending_reservations'),
+     path('count-by-voiture/', views.reservations_count_by_voiture, name='reservations_count_by_voiture'),
+     path('top-vehicles/', views.top_reserved_vehicles, name='top_reserved_vehicles'),
+     path('recent/', views.recent_reservations, name='recent_reservations')
 ]
