@@ -6,6 +6,8 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 import json
 from bson.son import SON
+from django.views.decorators.http import require_GET
+from django.db.models import Sum
 
 
 @csrf_exempt
@@ -272,5 +274,35 @@ def reservations_per_month_status(request):
         result = sorted(grouped.values(), key=lambda x: x['month'])
 
         return JsonResponse({'data': result})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+@csrf_exempt
+@require_GET
+def total_revenu(request):
+    try:
+        current_year = datetime.now().year
+
+        pipeline = [
+            {
+                '$match': {
+                    '$expr': { '$eq': [ { '$year': '$start_date' }, current_year ] }
+                }
+            },
+            {
+                '$group': {
+                    '_id': None,
+                    'total_revenu': { '$sum': '$total_price' }
+                }
+            }
+        ]
+
+        data = list(reservations.aggregate(pipeline))
+
+        total = data[0]['total_revenu'] if data else 0
+
+        # Retourner uniquement le total_revenu
+        return JsonResponse({'total_revenu': total})
+
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
