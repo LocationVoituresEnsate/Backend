@@ -85,7 +85,7 @@ def get_reservation(request, reservation_id):
                     'name': f"{client.get('firstName', '')} {client.get('lastName', '')}"
                 },
                 'voiture': {
-                    'id': str(voiture['_id']),
+                    'id': str(voitures['_id']),
                     'brand': voiture.get('brand', ''),
                     'model': voiture.get('model', ''),
                     'daily_price': voiture.get('dailyPrice', 0)
@@ -108,20 +108,43 @@ def get_all_reservations(request):
         try:
             all_reservations = []
             for res in reservations.find():
+                # Convertir les IDs en string
                 res['_id'] = str(res['_id'])
-                res['client_id'] = str(res['client_id'])
-                res['voiture_id'] = str(res['voiture_id'])
+
+                # Convertir les IDs en ObjectId si nécessaire
+                client_id = ObjectId(res['client_id']) if isinstance(res['client_id'], str) else res['client_id']
+                voiture_id = ObjectId(res['voiture_id']) if isinstance(res['voiture_id'], str) else res['voiture_id']
+
+                # Récupérer les données du client
+                client = clients.find_one({'_id': client_id})
+                res['client'] = {
+                    'first_name': client.get('first_name', ''),
+                    'last_name': client.get('last_name', ''),
+                    'license_number': client.get('license_number', '')
+                } if client else {}
+
+                # Récupérer le numéro d'immatriculation de la voiture
+                voiture = voitures.find_one({'_id': voiture_id})
+                res['registrationNumber'] = voiture.get('registrationNumber', '') if voiture else ''
+
+                # Formater les dates
                 res['start_date'] = res['start_date'].strftime('%Y-%m-%d')
                 res['end_date'] = res['end_date'].strftime('%Y-%m-%d')
                 res['created_at'] = res['created_at'].strftime('%Y-%m-%d %H:%M:%S')
+
+                # Nettoyer les champs techniques
+                del res['client_id']
+                del res['voiture_id']
+
                 all_reservations.append(res)
-            
+
             return JsonResponse({'reservations': all_reservations}, safe=False)
-        
+
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=400)
-    
+
     return JsonResponse({'error': 'Method not allowed'}, status=405)
+
 
 
 @csrf_exempt
