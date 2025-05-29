@@ -329,13 +329,117 @@ def total_revenu(request):
 
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
+
 @csrf_exempt
 @require_GET
 def count_pending_reservations(request):
     try:
-        # On compte toutes les réservations avec le status 'pending'
         pending_count = reservations.count_documents({'status': 'pending'})
 
         return JsonResponse({'pending_reservations_count': pending_count})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+@csrf_exempt
+@require_GET
+def reservations_count_by_voiture(request):
+    try:
+        # Agrégation pour compter les réservations par voiture
+        pipeline = [
+            {
+                '$group': {
+                    '_id': '$voiture_id',
+                    'count': { '$sum': 1 }
+                }
+            }
+        ]
+
+        results = list(reservations.aggregate(pipeline))
+
+        # Ajout des infos sur la voiture (par exemple numéro d'immatriculation)
+        response = []
+        for item in results:
+            voiture = voitures.find_one({'_id': item['_id']})
+            response.append({
+                'voiture_id': str(item['_id']),
+                'count': item['count'],
+                'registrationNumber': voiture.get('registrationNumber', '') if voiture else ''
+            })
+
+        return JsonResponse(response, safe=False)
+
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+@csrf_exempt
+@require_GET
+def top_reserved_vehicles(request):
+    try:
+        # Pipeline d’agrégation pour compter les réservations par voiture
+        pipeline = [
+            {
+                '$group': {
+                    '_id': '$voiture_id',
+                    'total_reservations': {'$sum': 1}
+                }
+            },
+            { '$sort': { 'total_reservations': -1 } },
+            { '$limit': 5 }  # top 5
+        ]
+
+        data = list(reservations.aggregate(pipeline))
+
+        # Enrichir les données avec les infos voiture
+        results = []
+        for item in data:
+            voiture = voitures.find_one({'_id': item['_id']})
+            if voiture:
+                results.append({
+                    'id': str(voiture['_id']),
+                    'name': f"{voiture.get('brand', '')} {voiture.get('model', '')}",
+                    'bookings': item['total_reservations'],
+                    'change': "+0%"  # Valeur par défaut ou à calculer si tu veux
+                })
+
+        return JsonResponse({'vehicles': results})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+@csrf_exempt
+@require_GET
+def recent_reservations(request):
+    try:
+        # Fetch last 5 reservations, sorted by _id (latest first)
+        recent_reservations = list(reservations.find().sort('_id', -1).limit(5))
+
+        results = []
+        for res in recent_reservations:
+            # Convert IDs to ObjectId if they are strings
+            client_id = ObjectId(res['client_id']) if isinstance(res['client_id'], str) else res['client_id']
+            voiture_id = ObjectId(res['voiture_id']) if isinstance(res['voiture_id'], str) else res['voiture_id']
+
+            # Get client and car info
+            client = clients.find_one({'_id': client_id})
+            voiture = voitures.find_one({'_id': voiture_id})
+
+            # Format dates
+            start_date = res['start_date'].strftime('%d/%m/%Y') if isinstance(res['start_date'], datetime) else res['start_date']
+            end_date = res['end_date'].strftime('%d/%m/%Y') if isinstance(res['end_date'], datetime) else res['end_date']
+
+            # Total price calculation
+            days = (res['end_date'] - res['start_date']).days + 1
+            total_price = res['daily_price'] * days
+
+            results.append({
+                'id': str(res['_id']),
+                'client_name': f"{client.get('first_name', '')} {client.get('last_name', '')}" if client else "Inconnu",
+                'car_name': f"{voiture.get('brand', '')} {voiture.get('model', '')}" if voiture else "Inconnue",
+                'start_date': start_date,
+                'end_date': end_date,
+                'total_price': total_price,
+                'status': res.get('status', 'inconnu')
+            })
+
+        return JsonResponse({'recent_reservations': results}, safe=False)
+
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
