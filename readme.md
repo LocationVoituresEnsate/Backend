@@ -1,21 +1,32 @@
---python should be installed
-Django installation:
---pip install django
-Pymongo installation
---pip install pymongo
+
 Database setup
 --our unified name is LocationVoitures
 --check that the connection url in 'db_connection.py' is correct from mongodb compass
 -- we should create the database before starting the development
+
+
+**pour installer les libraries**
+```bash
+python -m venv venv
+.\.venv\Scripts\activate    
+pip install -r requirements.txt      
+```
+**Running the project:**
+```bash
+cd LocationVoitures  
+Python manage.py runserver 
+```            
 Running the project:
 -- cd LocationVoitures
 -- python manage.py runserver
 
 
 **pour  créer an Account**
-
---python manage.py shell
---vous executer ça dans le shell
+```bash
+python manage.py shell
+```
+**vous executer ça dans le shell**
+```bash
 from Auth.models import Auth  
 
 
@@ -33,9 +44,12 @@ admin = Auth(
 
 admin.set_password('aya12345')  
 admin.save() 
+```
 
 **Pour utiliser JWT 
-    -- pip install PyJWT
+```bash
+    pip install PyJWT
+    ```
 
 
 
